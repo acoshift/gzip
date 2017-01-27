@@ -5,18 +5,60 @@ import (
 	"compress/gzip"
 	"net"
 	"net/http"
+	"strconv"
+	"sync"
 )
 
 type responseWriter struct {
 	http.ResponseWriter
-	g *gzip.Writer
+	pool *sync.Pool
+	g    *gzip.Writer
+	l    int
+}
+
+func (w *responseWriter) init() {
+	header := w.Header()
+	if w.l == 0 {
+		if l := header.Get(headerContentLength); len(l) > 0 {
+			w.l, _ = strconv.Atoi(l)
+		}
+	}
+	if w.l > 0 && w.l <= 860 {
+		return
+	}
+
+	w.g = w.pool.Get().(*gzip.Writer)
+	w.g.Reset(w.ResponseWriter)
+	header.Del(headerContentLength)
+	header.Set(headerContentEncoding, encodingGzip)
 }
 
 func (w *responseWriter) Write(b []byte) (int, error) {
-	if len(w.Header().Get(headerContentType)) == 0 {
-		w.Header().Set(headerContentType, http.DetectContentType(b))
+	if w.g == nil {
+		w.init()
 	}
-	return w.g.Write(b)
+	if w.g != nil {
+		if len(w.Header().Get(headerContentType)) == 0 {
+			w.Header().Set(headerContentType, http.DetectContentType(b))
+		}
+		return w.g.Write(b)
+	}
+	return w.ResponseWriter.Write(b)
+}
+
+func (w *responseWriter) Close() {
+	if w.g == nil {
+		return
+	}
+	w.g.Close()
+	w.pool.Put(w.g)
+}
+
+func (w *responseWriter) WriteHeader(code int) {
+	if w.g == nil {
+		w.init()
+	}
+	w.ResponseWriter.WriteHeader(code)
 }
 
 // Push implements Pusher interface
@@ -29,6 +71,9 @@ func (w *responseWriter) Push(target string, opts *http.PushOptions) error {
 
 // Flush implements Flusher interface
 func (w *responseWriter) Flush() {
+	if w.g != nil {
+		w.g.Flush()
+	}
 	if w, ok := w.ResponseWriter.(http.Flusher); ok {
 		w.Flush()
 	}

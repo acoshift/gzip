@@ -24,7 +24,7 @@ type Config struct {
 
 // New creates new gzip middleware
 func New(config Config) func(http.Handler) http.Handler {
-	pool := sync.Pool{
+	pool := &sync.Pool{
 		New: func() interface{} {
 			gz, err := gzip.NewWriterLevel(ioutil.Discard, config.Level)
 			if err != nil {
@@ -53,15 +53,15 @@ func New(config Config) func(http.Handler) http.Handler {
 				return
 			}
 
-			g := pool.Get().(*gzip.Writer)
-			defer g.Close()
-			defer pool.Put(g)
-			g.Reset(w)
-
 			header.Set(headerVary, headerAcceptEncoding)
-			header.Set(headerContentEncoding, encodingGzip)
 
-			h.ServeHTTP(&responseWriter{w, g}, r)
+			gw := &responseWriter{
+				ResponseWriter: w,
+				pool:           pool,
+			}
+			defer gw.Close()
+
+			h.ServeHTTP(gw, r)
 		})
 	}
 }
