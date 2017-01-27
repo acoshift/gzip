@@ -62,7 +62,6 @@ func New(config Config) func(http.Handler) http.Handler {
 			header.Set(headerContentEncoding, encodingGzip)
 
 			h.ServeHTTP(&responseWriter{w, g}, r)
-			header.Del(headerContentLength)
 		})
 	}
 }
