@@ -8,6 +8,15 @@ import (
 	"sync"
 )
 
+// Copy from compress/gzip
+const (
+	NoCompression      = gzip.NoCompression
+	BestSpeed          = gzip.BestSpeed
+	BestCompression    = gzip.BestCompression
+	DefaultCompression = gzip.DefaultCompression
+	HuffmanOnly        = gzip.HuffmanOnly
+)
+
 // Config is the gzip middleware config
 type Config struct {
 	Level int
