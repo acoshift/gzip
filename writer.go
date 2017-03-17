@@ -18,6 +18,9 @@ type responseWriter struct {
 
 func (w *responseWriter) init() {
 	header := w.Header()
+	if len(header.Get(headerContentEncoding)) > 0 {
+		return
+	}
 	if w.l == 0 {
 		if l := header.Get(headerContentLength); len(l) > 0 {
 			w.l, _ = strconv.Atoi(l)
