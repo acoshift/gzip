@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/acoshift/header"
 	"github.com/acoshift/middleware"
 )
 
@@ -55,24 +56,24 @@ func New(config Config) middleware.Middleware {
 				return
 			}
 
-			if !strings.Contains(r.Header.Get(headerAcceptEncoding), encodingGzip) {
+			if !strings.Contains(r.Header.Get(header.AcceptEncoding), header.Gzip) {
 				h.ServeHTTP(w, r)
 				return
 			}
 
-			if len(r.Header.Get(headerSecWebSocketKey)) > 0 {
+			if len(r.Header.Get(header.SecWebSocketKey)) > 0 {
 				h.ServeHTTP(w, r)
 				return
 			}
 
-			header := w.Header()
+			hh := w.Header()
 
-			if header.Get(headerContentEncoding) == encodingGzip {
+			if hh.Get(header.ContentEncoding) == header.Gzip {
 				h.ServeHTTP(w, r)
 				return
 			}
 
-			header.Set(headerVary, headerAcceptEncoding)
+			hh.Set(header.Vary, header.AcceptEncoding)
 
 			gw := &responseWriter{
 				ResponseWriter: w,

@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+
+	"github.com/acoshift/header"
 )
 
 type responseWriter struct {
@@ -17,12 +19,12 @@ type responseWriter struct {
 }
 
 func (w *responseWriter) init() {
-	header := w.Header()
-	if len(header.Get(headerContentEncoding)) > 0 {
+	h := w.Header()
+	if len(h.Get(header.ContentEncoding)) > 0 {
 		return
 	}
 	if w.l == 0 {
-		if l := header.Get(headerContentLength); len(l) > 0 {
+		if l := h.Get(header.ContentLength); len(l) > 0 {
 			w.l, _ = strconv.Atoi(l)
 		}
 	}
@@ -32,8 +34,8 @@ func (w *responseWriter) init() {
 
 	w.g = w.pool.Get().(*gzip.Writer)
 	w.g.Reset(w.ResponseWriter)
-	header.Del(headerContentLength)
-	header.Set(headerContentEncoding, encodingGzip)
+	h.Del(header.ContentLength)
+	h.Set(header.ContentEncoding, header.Gzip)
 }
 
 func (w *responseWriter) Write(b []byte) (int, error) {
@@ -41,8 +43,8 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 		w.init()
 	}
 	if w.g != nil {
-		if len(w.Header().Get(headerContentType)) == 0 {
-			w.Header().Set(headerContentType, http.DetectContentType(b))
+		if len(w.Header().Get(header.ContentType)) == 0 {
+			w.Header().Set(header.ContentType, http.DetectContentType(b))
 		}
 		return w.g.Write(b)
 	}
