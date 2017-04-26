@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/acoshift/middleware"
 )
 
 // Copy from compress/gzip
@@ -19,16 +21,23 @@ const (
 
 // Config is the gzip middleware config
 type Config struct {
-	Level int
+	Skipper middleware.Skipper
+	Level   int
 }
 
 // DefaultConfig use default compression level
 var DefaultConfig = Config{
-	Level: DefaultCompression,
+	Skipper: middleware.DefaultSkipper,
+	Level:   DefaultCompression,
 }
 
 // New creates new gzip middleware
-func New(config Config) func(http.Handler) http.Handler {
+func New(config Config) middleware.Middleware {
+	// fill default config
+	if config.Skipper == nil {
+		config.Skipper = DefaultConfig.Skipper
+	}
+
 	pool := &sync.Pool{
 		New: func() interface{} {
 			gz, err := gzip.NewWriterLevel(ioutil.Discard, config.Level)
@@ -41,6 +50,11 @@ func New(config Config) func(http.Handler) http.Handler {
 
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if config.Skipper(r) {
+				h.ServeHTTP(w, r)
+				return
+			}
+
 			if !strings.Contains(r.Header.Get(headerAcceptEncoding), encodingGzip) {
 				h.ServeHTTP(w, r)
 				return
