@@ -22,6 +22,11 @@ type Config struct {
 	Level int
 }
 
+// DefaultConfig use default compression level
+var DefaultConfig = Config{
+	Level: DefaultCompression,
+}
+
 // New creates new gzip middleware
 func New(config Config) func(http.Handler) http.Handler {
 	pool := &sync.Pool{
