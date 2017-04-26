@@ -56,7 +56,7 @@ func New(config Config) middleware.Middleware {
 				return
 			}
 
-			if !strings.Contains(r.Header.Get(header.AcceptEncoding), header.Gzip) {
+			if !strings.Contains(r.Header.Get(header.AcceptEncoding), header.EncodingGzip) {
 				h.ServeHTTP(w, r)
 				return
 			}
@@ -68,7 +68,7 @@ func New(config Config) middleware.Middleware {
 
 			hh := w.Header()
 
-			if hh.Get(header.ContentEncoding) == header.Gzip {
+			if hh.Get(header.ContentEncoding) == header.EncodingGzip {
 				h.ServeHTTP(w, r)
 				return
 			}

@@ -35,7 +35,7 @@ func (w *responseWriter) init() {
 	w.g = w.pool.Get().(*gzip.Writer)
 	w.g.Reset(w.ResponseWriter)
 	h.Del(header.ContentLength)
-	h.Set(header.ContentEncoding, header.Gzip)
+	h.Set(header.ContentEncoding, header.EncodingGzip)
 }
 
 func (w *responseWriter) Write(b []byte) (int, error) {
